@@ -7,36 +7,46 @@ type Food = {
   description: string;
   imageUrl?: string | null;
 };
-
-export const dynamic = "force-dynamic"; // ensure SSR, no static cache
-
+export const dynamic = "force-dynamic";
 const FALLBACK_IMG = "https://placehold.co/800x450?text=Food+Image";
 
-async function getFoods() {
+async function getFoodsSafe(): Promise<{ foods: Food[]; error?: string }> {
   const base = getBaseUrl();
-  const res = await fetch(`${base}/api/foods`, { cache: "no-store" });
-  if (!res.ok) {
-    let body = "";
-    try { body = await res.text(); } catch {}
-    console.error("GET /api/foods failed:", res.status, body);
-    throw new Error("Failed to fetch foods");
+  try {
+    const res = await fetch(`${base}/api/foods`, { cache: "no-store" });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.error("GET /api/foods failed:", res.status, body);
+      return { foods: [], error: body || `HTTP ${res.status}` };
+    }
+    const json = await res.json();
+    return { foods: json.data as Food[] };
+  } catch (e: any) {
+    return { foods: [], error: e?.message ?? "Unknown error" };
   }
-  const json = await res.json();
-  return json.data as Food[];
 }
 
 export default async function FoodsPage() {
-  const foods = await getFoods();
-
+  const { foods, error } = await getFoodsSafe();
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-semibold">Daftar Makanan</h1>
+
+      {error && (
+        <div className="card p-4 text-sm text-red-300">
+          Gagal memuat data: {error}. Cek <code>/api/foods</code> di browser
+          atau terminal Next.js untuk detail.
+        </div>
+      )}
+
       <ul className="grid md:grid-cols-2 gap-4">
         {foods.map((f) => (
           <li key={f.id} className="card overflow-hidden">
-            <Link href={`/foods/${f.id}`} className="block hover:bg-white/5 transition">
+            <Link
+              href={`/foods/${f.id}`}
+              className="block hover:bg-white/5 transition"
+            >
               <div className="aspect-[16/9] bg-slate-800/60">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   alt={f.name}
                   src={f.imageUrl ?? FALLBACK_IMG}

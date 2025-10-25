@@ -1,0 +1,10 @@
+/* src/app/globals.css */
+@import "tailwindcss";
+
+/* CSS kamu sendiri di bawah ini */
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
