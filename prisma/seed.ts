@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, FoodType } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
@@ -6,25 +6,20 @@ async function main() {
     data: [
       {
         name: "Nasi Uduk",
-        description: "Nasi gurih dengan lauk-pauk khas Betawi.",
-        ingredients: "Nasi, santan, daun salam, serai, lauk",
-        type: "FRESH", // string, bukan enum
-        imageUrl:
-          "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=1200&auto=format&fit=crop",
+        description: "…",
+        ingredients: "…",
+        type: FoodType.FRESH,
+        imageUrl: "https://images.unsplash.com/…",
       },
       {
         name: "Ayam Geprek",
-        description: "Ayam goreng tepung dengan sambal pedas.",
-        ingredients: "Ayam, tepung, cabai, bawang, garam",
-        type: "UPH", // string, bukan enum
-        imageUrl:
-          "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1200&auto=format&fit=crop",
+        description: "…",
+        ingredients: "…",
+        type: FoodType.UPH,
+        imageUrl: "https://images.unsplash.com/…",
       },
     ],
   });
-  console.log("SQLite seeded sample foods.");
+  console.log("Seeded sample foods.");
 }
-
-main().finally(async () => {
-  await prisma.$disconnect();
-});
+main().finally(() => prisma.$disconnect());

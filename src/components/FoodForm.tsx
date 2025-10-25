@@ -15,6 +15,10 @@ type Props = {
   mode: "create" | "edit";
 };
 
+// Base URL absolut dari env (hilangkan trailing slash)
+const BASE = (process.env.NEXT_PUBLIC_APP_URL ?? "").replace(/\/$/, "");
+const api = (p: string) => `${BASE}${p}`;
+
 export default function FoodForm({ foodId, initial, mode }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -23,7 +27,7 @@ export default function FoodForm({ foodId, initial, mode }: Props) {
     description: initial?.description ?? "",
     type: initial?.type ?? "FRESH",
     ingredients: initial?.ingredients ?? "",
-    imageUrl: initial?.imageUrl ?? ""
+    imageUrl: initial?.imageUrl ?? "",
   });
   const [error, setError] = useState<string | null>(null);
 
@@ -36,9 +40,7 @@ export default function FoodForm({ foodId, initial, mode }: Props) {
     setError(null);
     try {
       const url =
-        mode === "create"
-          ? "/api/create-food"
-          : `/api/update-food/${foodId}`;
+        mode === "create" ? api("/api/create-food") : api(`/api/update-food/${foodId}`);
 
       const res = await fetch(url, {
         method: mode === "create" ? "POST" : "PUT",
@@ -47,7 +49,7 @@ export default function FoodForm({ foodId, initial, mode }: Props) {
       });
 
       if (!res.ok) {
-        const msg = await res.text();
+        const msg = await res.text().catch(() => "");
         throw new Error(msg || "Request failed");
       }
 
@@ -66,7 +68,7 @@ export default function FoodForm({ foodId, initial, mode }: Props) {
   async function onDelete() {
     if (!foodId) return;
     if (!confirm("Hapus makanan ini?")) return;
-    const res = await fetch(`/api/delete-food/${foodId}`, { method: "DELETE" });
+    const res = await fetch(api(`/api/delete-food/${foodId}`), { method: "DELETE" });
     if (res.ok) {
       router.push("/foods");
     } else {
@@ -79,7 +81,7 @@ export default function FoodForm({ foodId, initial, mode }: Props) {
       <div className="grid md:grid-cols-2 gap-4">
         <div>
           <label className="label">Nama</label>
-          <input className="input" value={form.name} onChange={(e) => update("name", e.target.value)} required/>
+          <input className="input" value={form.name} onChange={(e) => update("name", e.target.value)} required />
         </div>
         <div>
           <label className="label">Tipe</label>
@@ -96,17 +98,34 @@ export default function FoodForm({ foodId, initial, mode }: Props) {
 
       <div>
         <label className="label">URL Gambar</label>
-        <input className="input" value={form.imageUrl} onChange={(e) => update("imageUrl", e.target.value)} placeholder="https://..."/>
+        <input
+          className="input"
+          value={form.imageUrl}
+          onChange={(e) => update("imageUrl", e.target.value)}
+          placeholder="https://..."
+        />
       </div>
 
       <div>
         <label className="label">Deskripsi</label>
-        <textarea className="textarea" rows={4} value={form.description} onChange={(e) => update("description", e.target.value)} required/>
+        <textarea
+          className="textarea"
+          rows={4}
+          value={form.description}
+          onChange={(e) => update("description", e.target.value)}
+          required
+        />
       </div>
 
       <div>
         <label className="label">Bahan-bahan</label>
-        <textarea className="textarea" rows={3} value={form.ingredients} onChange={(e) => update("ingredients", e.target.value)} required/>
+        <textarea
+          className="textarea"
+          rows={3}
+          value={form.ingredients}
+          onChange={(e) => update("ingredients", e.target.value)}
+          required
+        />
       </div>
 
       {error && <p className="text-sm text-red-300">{error}</p>}

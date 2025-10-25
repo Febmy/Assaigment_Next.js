@@ -1,65 +1,36 @@
 import { getBaseUrl } from "@/lib/base-url";
 import FoodForm from "@/components/FoodForm";
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
 
 type Food = {
   id: string;
   name: string;
   description: string;
   ingredients: string;
-  type: string; // "UPH" | "FRESH" disimpan sebagai string (SQLite tidak dukung enum)
+  type: string;
   imageUrl?: string | null;
 };
 
 export const dynamic = "force-dynamic";
 
-async function getFood(id: string): Promise<Food | null> {
-  const base = getBaseUrl();
-  try {
-    const res = await fetch(`${base}/api/foods/${id}`, { cache: "no-store" });
-    if (res.ok) {
-      const json = await res.json();
-      return json.data as Food;
-    }
-    if (res.status === 404) return null;
+const FALLBACK_IMG = "https://placehold.co/800x450?text=Food+Image";
 
+async function getFood(id: string) {
+  const base = getBaseUrl();
+  const res = await fetch(`${base}/api/foods/${id}`, { cache: "no-store" });
+  if (res.status === 404) return null;
+  if (!res.ok) {
     const body = await res.text().catch(() => "");
     console.error("GET /api/foods/[id] failed:", res.status, body);
-
-    // Dev fallback: query Prisma langsung bila API gagal
-    if (process.env.NODE_ENV !== "production") {
-      console.warn("[DEV] Fallback to Prisma for single food");
-      const food = await prisma.food.findUnique({ where: { id } });
-      return (food as unknown as Food) ?? null;
-    }
-    return null;
-  } catch (err) {
-    // Dev fallback: mock item supaya halaman tetap render
-    if (process.env.NODE_ENV !== "production") {
-      console.warn("[DEV] Fallback to mock food");
-      return {
-        id,
-        name: "Sample Food",
-        description: "Mock detail because API/DB failed.",
-        ingredients: "-",
-        type: "FRESH",
-        imageUrl: "https://via.placeholder.com/800x450?text=Mock+Food",
-      } as Food;
-    }
-    throw err;
+    throw new Error("Failed to fetch food");
   }
+  const json = await res.json();
+  return json.data as Food;
 }
 
-export default async function FoodDetailPage({
-  params,
-}: {
-  params: { id: string };
-}) {
+export default async function FoodDetailPage({ params }: { params: { id: string } }) {
   const food = await getFood(params.id);
-  if (!food) {
-    notFound();
-  }
+  if (!food) notFound();
 
   return (
     <div className="space-y-6">
@@ -69,10 +40,7 @@ export default async function FoodDetailPage({
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               alt={food.name}
-              src={
-                food.imageUrl ??
-                "https://via.placeholder.com/800x450?text=Food+Image"
-              }
+              src={food.imageUrl ?? FALLBACK_IMG}
               className="w-full h-full object-cover"
             />
           </div>
